@@ -1,3 +1,5 @@
+using Balance.BackEnd.v2.Datos.SupabaseDB;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//SupabaseDB
+builder.Services.AddScoped<ISupabaseDB, SupabaseDB>();
 
 var app = builder.Build();
 
