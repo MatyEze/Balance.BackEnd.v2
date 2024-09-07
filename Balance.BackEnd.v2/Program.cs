@@ -12,6 +12,19 @@ builder.Services.AddSwaggerGen();
 //SupabaseDB
 builder.Services.AddScoped<ISupabaseDB, SupabaseDB>();
 
+//AllowedOriginsCors
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp",
+        builder =>
+        {
+            builder.WithOrigins(allowedOrigins!) // Reemplaza con la URL de tu aplicación Angular
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -20,6 +33,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowAngularApp");
 
 app.UseHttpsRedirection();
 
