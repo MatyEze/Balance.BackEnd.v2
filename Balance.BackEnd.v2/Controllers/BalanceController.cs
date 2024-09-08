@@ -7,11 +7,13 @@ namespace Balance.BackEnd.v2.Controllers
     [Route("[controller]/[action]")]
     public class BalanceController : ControllerBase
     {
+        private readonly ILogger<BalanceController> _logger;
         private readonly ISupabaseDB _supabaseDB;
 
-        public BalanceController(ISupabaseDB supabaseDB)
+        public BalanceController(ISupabaseDB supabaseDB, ILogger<BalanceController> logger)
         {
             _supabaseDB = supabaseDB;
+            _logger = logger;
         }
 
         [HttpGet]

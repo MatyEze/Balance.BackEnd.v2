@@ -5,18 +5,22 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
     public class SupabaseDB : ISupabaseDB
     {
         private readonly Supabase.Client _client;
+        private readonly ILogger<SupabaseDB> _logger;
 
-        public SupabaseDB(IConfiguration configuration)
+        public SupabaseDB(IConfiguration configuration, ILogger<SupabaseDB> logger)
         {
             Supabase.SupabaseOptions options = new Supabase.SupabaseOptions
             {
                 AutoConnectRealtime = true
             };
 
-            string key = configuration["Supabase:Key"];
-            string url = configuration["Supabase:Url"];
+            string key = configuration["Supabase:Key"]!;
+            string url = configuration["Supabase:Url"]!;
             _client = new Supabase.Client(url, key, options);
+            
+            _logger = logger;
         }
+
 
         public async Task<List<TipoTicketSPB>> GetTiposTicket()
         {
@@ -56,11 +60,19 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
 
         public async Task<List<TicketSPB>> GetTicketByString(string ticketString)
         {
-            var result = await _client.From<TicketSPB>()
-                .Select("Id, Ticket, IdTipo, Descripcion, Tipo:IdTipo(Id, Tipo)")
-                .Where(x => x.Ticket == ticketString).Get();
+            try
+            {
+                var result = await _client.From<TicketSPB>()
+                    .Select("Id, Ticket, IdTipo, Descripcion, Tipo:IdTipo(Id, Tipo)")
+                    .Where(x => x.Ticket == ticketString).Get();
 
-            return result.Models;
+                return result.Models;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener Ticket por String en DB");
+                throw new Exception($"Error al obtener Ticket por String en DB: {ex}");
+            }
         }
 
         public async Task<TicketSPB> InsertTicket(string ticketString, int idTipo, string descripcion)
@@ -72,7 +84,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             }
             catch (Exception ex)
             {
-
+                _logger.LogError(ex, "Error al Insertar Ticket en DB");
                 throw new Exception($"Error al Insertar Ticket en DB: {ex}");
             }
         }
@@ -86,6 +98,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al Insertar Movimientos en DB");
                 throw new Exception($"Error al Insertar Movimientos en DB: {ex}");
             }
         }
@@ -110,6 +123,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al obtener Movimientos de DB");
                 throw new Exception($"Error al obtener Movimientos de DB: {ex}");
             }
         }

@@ -1,4 +1,5 @@
 using Balance.BackEnd.v2.Datos.SupabaseDB;
+using Balance.BackEnd.v2.StartupExtension;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,9 @@ builder.Services.AddSwaggerGen();
 
 //SupabaseDB
 builder.Services.AddScoped<ISupabaseDB, SupabaseDB>();
+
+//Se agregan servicios por inyeccion, estan incluidos los profiles de automaper que usa cada servicio
+ServiceExtension.AddScopesServices(builder.Services);
 
 //AllowedOriginsCors
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
