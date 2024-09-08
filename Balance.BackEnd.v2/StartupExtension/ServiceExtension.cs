@@ -5,6 +5,7 @@
         public static IServiceCollection AddScopesServices(this IServiceCollection services)
         {
             services.AddScopesMovimientosService();
+            services.AddScopesActivosService();
 
             return services;
         }
