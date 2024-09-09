@@ -22,7 +22,7 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             _mapper = mapper;
         }
 
-        public async Task<List<Movimiento>> ProcesarMovimientos(List<string> data, string brokerResourceKey, string idUsuario)
+        public async Task<List<Movimiento>> ProcesarMovimientos(List<string> data, string brokerResourceKey)
         {
             BrokerSPB? brokerSPB = await _supabaseDB.GetBrokerSPBByResourceKey(brokerResourceKey);
 
@@ -35,14 +35,14 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             switch (brokerSPB.ResourceKey)
             {
                 case "IOL":
-                    return await ProcesarMovimientosIOL(data, brokerSPB, idUsuario);
+                    return await ProcesarMovimientosIOL(data, brokerSPB);
                 default:
                     _logger.LogError($"El procesamiento de datos para el broker {brokerResourceKey} no esta implementado.");
                     throw new Exception($"El procesamiento de datos para el broker {brokerResourceKey} no esta implementado.");
             }
         }
 
-        private async Task<List<Movimiento>> ProcesarMovimientosIOL(List<string> data, BrokerSPB brokerSPB, string idUsuario)
+        private async Task<List<Movimiento>> ProcesarMovimientosIOL(List<string> data, BrokerSPB brokerSPB)
         {
             List<Movimiento> movimientos = new List<Movimiento>();
             List<MovimientoSPB> movimientosToUpload = new List<MovimientoSPB>();
@@ -78,22 +78,22 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
 
                 //idUsuario = "0" es que no se habilito desde el front para subir a db
                 //Tambien se verifica que el movimiento pueda ser subido a db
-                if (idUsuario != "0" && movimiento.PermitirDb)
-                {
-                    //movimientosToUpload.Add(movimiento.ToMovimientoSPB(idUsuario, true));
-                    MovimientoSPB movimientoSPB = _mapper.Map<MovimientoSPB>(movimiento);
+                //if (idUsuario != "0" && movimiento.PermitirDb)
+                //{
+                //    //movimientosToUpload.Add(movimiento.ToMovimientoSPB(idUsuario, true));
+                //    MovimientoSPB movimientoSPB = _mapper.Map<MovimientoSPB>(movimiento);
 
-                    movimientoSPB.EnDb = true;
-                    movimiento.EnDb = true;
-                }
+                //    movimientoSPB.EnDb = true;
+                //    movimiento.EnDb = true;
+                //}
 
                 movimientos.Add(movimiento);
             }
 
-            if (movimientosToUpload.Count > 0)
-            {
-                await _supabaseDB.InsertMovimentosSPB(movimientosToUpload);
-            }
+            //if (movimientosToUpload.Count > 0)
+            //{
+            //    await _supabaseDB.InsertMovimentosSPB(movimientosToUpload);
+            //}
 
             return movimientos;
         }
