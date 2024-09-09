@@ -8,7 +8,7 @@ namespace Balance.BackEnd.v2.StartupExtension
         public static IServiceCollection AddScopesMovimientosService(this IServiceCollection services)
         {
             services.AddScoped<IMovimientosService, MovimientosService>();
-            services.AddAutoMapper(typeof(MovimientoProfile));
+            services.AddAutoMapper(typeof(MovimientoServiceProfile));
 
             return services;
         }

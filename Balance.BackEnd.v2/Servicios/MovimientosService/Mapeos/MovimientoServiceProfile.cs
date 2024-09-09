@@ -4,11 +4,12 @@ using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
 
 namespace Balance.BackEnd.v2.Servicios.MovimientosService.Mapeos
 {
-    public class MovimientoProfile : Profile
+    public class MovimientoServiceProfile : Profile
     {
-        public MovimientoProfile()
+        public MovimientoServiceProfile()
         {
             CreateMap<Movimiento, MovimientoSPB>();
+            CreateMap<BrokerSPB, Broker>();
         }
     }
 }

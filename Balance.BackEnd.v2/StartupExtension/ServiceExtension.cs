@@ -6,6 +6,7 @@
         {
             services.AddScopesMovimientosService();
             services.AddScopesActivosService();
+            services.AddScopesDataCompletaService();
 
             return services;
         }

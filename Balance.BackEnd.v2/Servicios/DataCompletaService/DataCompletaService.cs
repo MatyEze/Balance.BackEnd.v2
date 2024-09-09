@@ -40,20 +40,10 @@ namespace Balance.BackEnd.v2.Servicios.DataCompletaService
                     movimientos = await _movimientosService.ProcesarMovimientos(data, brokerResourceKey);
                     activos = await _activosService.GenerarActivos(movimientos);
 
-                    dataCompleta.Movimientos = movimientos;
                     dataCompleta.Activos = activos;
-                }
+                    await UploadMovimientos(movimientos, idUsuario);
 
-                if (idUsuario != "0" && dataCompleta.Movimientos.Count > 0)
-                {
-                    List<MovimientoSPB> movimientosUpload = new List<MovimientoSPB>();
-                    foreach (Movimiento movimiento in dataCompleta.Movimientos)
-                    {
-                        if (movimiento.PermitirDb)
-                        {
-
-                        }
-                    }
+                    dataCompleta.Movimientos = movimientos;
                 }
 
                 return dataCompleta;
@@ -65,7 +55,7 @@ namespace Balance.BackEnd.v2.Servicios.DataCompletaService
             }
         }
 
-        private async Task<List<Movimiento>> UploadMovimientos(List<Movimiento> movimientos, string idUsuario)
+        private async Task UploadMovimientos(List<Movimiento> movimientos, string idUsuario)
         {
             if (idUsuario != "0" && movimientos.Count > 0)
             {
@@ -88,8 +78,6 @@ namespace Balance.BackEnd.v2.Servicios.DataCompletaService
                     await _supabaseDB.InsertMovimentosSPB(movimientosUpload);
                 }
             }
-
-            return movimientos;
         }
     }
 }
