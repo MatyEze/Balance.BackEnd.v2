@@ -55,6 +55,21 @@ namespace Balance.BackEnd.v2.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("{idUsuario}")]
+        public async Task<IActionResult> InsertMovimientos([FromBody] List<Movimiento> movimientos, [FromRoute] string idUsuario)
+        {
+            try
+            {
+                var result = await _supabaseDB.InsertMovimientos(movimientos, idUsuario);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> test(string idUsuario)
         {

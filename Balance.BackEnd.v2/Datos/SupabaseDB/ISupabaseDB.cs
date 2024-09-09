@@ -1,4 +1,5 @@
 ﻿using Balance.BackEnd.v2.Datos.SupabaseDB.Modelos;
+using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
 
 namespace Balance.BackEnd.v2.Datos.SupabaseDB
 {
@@ -17,7 +18,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
         /// <param name="IdTipo"></param>
         /// <returns>TicketSPB con la Id creada</returns>
         Task<TicketSPB> InsertTicket(string ticketString, int idTipo, string descripcion);
-        //Task<int> InsertMovimientos(List<Movimiento> movimientos, string idUsuario);
+        Task<int> InsertMovimientos(List<Movimiento> movimientos, string idUsuario);
         Task<string> InsertMovimentosSPB(List<MovimientoSPB> movimientosSPB);
         Task<List<MovimientoSPB>> GetMovimientosSPB(string idUsuario);
     }

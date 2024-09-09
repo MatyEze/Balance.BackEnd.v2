@@ -1,4 +1,5 @@
 ﻿using Balance.BackEnd.v2.Datos.SupabaseDB.Modelos;
+using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
 
 namespace Balance.BackEnd.v2.Datos.SupabaseDB
 {
@@ -128,40 +129,40 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             }
         }
 
-        //public async Task<int> InsertMovimientos(List<Movimiento> movimientos, string idUsuario)
-        //{
-        //    try
-        //    {
-        //        List<MovimientoSPB> movimientosSPB = new List<MovimientoSPB>();
-        //        foreach (Movimiento movimiento in movimientos)
-        //        {
-        //            movimientosSPB.Add(new MovimientoSPB
-        //            {
-        //                NrMovimiento = movimiento.NroMovimiento,
-        //                IdBroker = movimiento.Broker.Id,
-        //                Cantidad = movimiento.Cantidad,
-        //                IdUsuario = idUsuario,
-        //                IdTipoMovimiento = movimiento.TipoMovimiento.Id,
-        //                IdTicket = movimiento.Ticket.Id,
-        //                IdTipoPrecio = movimiento.Precio.IdTipo,
-        //                Precio = movimiento.Precio.Cantidad,
-        //                IdTipoMontoTotal = movimiento.MontoTotal.IdTipo,
-        //                MontoTotal = movimiento.MontoTotal.Cantidad,
-        //                EnDb = true,
-        //                Observaciones = movimiento.Observaciones
-        //            });
-        //        }
+        public async Task<int> InsertMovimientos(List<Movimiento> movimientos, string idUsuario)
+        {
+            try
+            {
+                List<MovimientoSPB> movimientosSPB = new List<MovimientoSPB>();
+                foreach (Movimiento movimiento in movimientos)
+                {
+                    movimientosSPB.Add(new MovimientoSPB
+                    {
+                        NrMovimiento = movimiento.NroMovimiento,
+                        IdBroker = movimiento.Broker.Id,
+                        Cantidad = movimiento.Cantidad,
+                        IdUsuario = idUsuario,
+                        IdTipoMovimiento = movimiento.TipoMovimiento.Id,
+                        IdTicket = movimiento.Ticket.Id,
+                        IdTipoPrecio = movimiento.Precio.IdTipo,
+                        Precio = movimiento.Precio.Cantidad,
+                        IdTipoMontoTotal = movimiento.MontoTotal.IdTipo,
+                        MontoTotal = movimiento.MontoTotal.Cantidad,
+                        EnDb = true,
+                        Observaciones = movimiento.Observaciones
+                    });
+                }
 
-        //        var result = await _client.Rpc("BULK_INSERT_MOVIMIENTOS", new { movimientos_data = movimientosSPB });
+                var result = await _client.Rpc("BULK_INSERT_MOVIMIENTOS", new { movimientos_data = movimientosSPB });
 
-        //        int.TryParse(result.Content, out int cantidadInsertados);
+                int.TryParse(result.Content, out int cantidadInsertados);
 
-        //        return cantidadInsertados;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception($"Error al Insertar Movimientos en DB: {ex}");
-        //    }
-        //}
+                return cantidadInsertados;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error al Insertar Movimientos en DB: {ex}");
+            }
+        }
     }
 }
