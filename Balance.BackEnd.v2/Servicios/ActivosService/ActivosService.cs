@@ -59,7 +59,7 @@ namespace Balance.BackEnd.v2.Servicios.ActivosService
 
             foreach (Movimiento movimiento in movimientosOrdenados)
             {
-                Titulo? tituloExistente = titulos.FirstOrDefault(t => t.Ticket.Id == movimiento.Ticket.Id);
+                Titulo? tituloExistente = titulos.FirstOrDefault(t => t.Ticket.TicketString == movimiento.Ticket.TicketString && t.Ticket.IdTipo == movimiento.Ticket.IdTipo);
 
                 if (tituloExistente != null)
                 {
