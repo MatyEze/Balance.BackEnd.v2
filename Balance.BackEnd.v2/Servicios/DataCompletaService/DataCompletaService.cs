@@ -6,7 +6,6 @@ using Balance.BackEnd.v2.Servicios.ActivosService.Modelos;
 using Balance.BackEnd.v2.Servicios.DataCompletaService.Modelos;
 using Balance.BackEnd.v2.Servicios.MovimientosService;
 using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
-using System.Collections.Generic;
 
 namespace Balance.BackEnd.v2.Servicios.DataCompletaService
 {
@@ -41,7 +40,7 @@ namespace Balance.BackEnd.v2.Servicios.DataCompletaService
                     activos = await _activosService.GenerarActivos(movimientos);
 
                     dataCompleta.Activos = activos;
-                    await UploadMovimientos(movimientos, idUsuario);
+                    await _movimientosService.UploadMovimientos(movimientos, idUsuario);
 
                     dataCompleta.Movimientos = movimientos;
                 }
@@ -55,29 +54,22 @@ namespace Balance.BackEnd.v2.Servicios.DataCompletaService
             }
         }
 
-        private async Task UploadMovimientos(List<Movimiento> movimientos, string idUsuario)
+        public async Task<DataCompleta> GetDataCompletaDB(List<Movimiento> movimientosEnDbFalse, string idUsuario)
         {
-            if (idUsuario != "0" && movimientos.Count > 0)
+            try
             {
-                List<MovimientoSPB> movimientosUpload = new List<MovimientoSPB>();
-                foreach (Movimiento movimiento in movimientos)
-                {
-                    if (movimiento.PermitirDb)
-                    {
-                        MovimientoSPB movimientoSPB = _mapper.Map<MovimientoSPB>(movimiento);
+                List<Movimiento> movimientos = await _movimientosService.GetMovimientosFromDB(movimientosEnDbFalse, idUsuario);
+                Activos activos = await _activosService.GenerarActivos(movimientos);
 
-                        movimientoSPB.EnDb = true;
-                        movimiento.EnDb = true;
-
-                        movimientosUpload.Add(movimientoSPB);
-                    }
-                }
-
-                if (movimientosUpload.Count > 0)
-                {
-                    await _supabaseDB.InsertMovimentosSPB(movimientosUpload);
-                }
+                return new DataCompleta { Activos = activos, Movimientos = movimientos };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al obtener dataCompleta desde DB: {ex}");
+                throw new Exception($"Error al obtener dataCompleta desde DB: {ex}");
             }
         }
+
+        
     }
 }

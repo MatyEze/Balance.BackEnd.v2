@@ -260,6 +260,105 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             }
         }
 
+        public async Task UploadMovimientos(List<Movimiento> movimientos, string idUsuario)
+        {
+            if (idUsuario != "0" && movimientos.Count > 0)
+            {
+                List<MovimientoSPB> movimientosUpload = new List<MovimientoSPB>();
+                foreach (Movimiento movimiento in movimientos)
+                {
+                    if (movimiento.PermitirDb)
+                    {
+                        MovimientoSPB movimientoSPB = _mapper.Map<MovimientoSPB>(movimiento);
+
+                        movimientoSPB.EnDb = true;
+                        movimiento.EnDb = true;
+
+                        movimientosUpload.Add(movimientoSPB);
+                    }
+                }
+
+                if (movimientosUpload.Count > 0)
+                {
+                    await _supabaseDB.InsertMovimentosSPB(movimientosUpload);
+                }
+            }
+        }
+
+        public async Task<List<Movimiento>> GetMovimientosFromDB(List<Movimiento> movimientosEnDbFalse, string idUsuario)
+        {
+            List<MovimientoSPB> movimientosSPB = await _supabaseDB.GetMovimientosSPB(idUsuario);
+
+            if (movimientosSPB.Count > 0)
+            {
+                foreach (MovimientoSPB movSPB in movimientosSPB)
+                {
+                    if (movimientosEnDbFalse.Any(x => x.NroMovimiento == movSPB.NrMovimiento && x.Broker.ResourceKey == movSPB.BrokerSPB.ResourceKey))
+                    {
+                        continue;
+                    }
+
+                    movimientosEnDbFalse.Add(new Movimiento
+                    {
+                        NroMovimiento = movSPB.NrMovimiento,
+                        Broker = new Broker
+                        {
+                            Id = movSPB.BrokerSPB.Id,
+                            Descripcion = movSPB.BrokerSPB.Descripcion,
+                            ResourceKey = movSPB.BrokerSPB.ResourceKey
+                        },
+                        Ticket = new Ticket
+                        {
+                            Id = movSPB.TicketSPB.Id,
+                            TicketString = movSPB.TicketSPB.Ticket,
+                            IdTipo = movSPB.TicketSPB.IdTipo,
+                            Tipo = movSPB.TicketSPB.Tipo.Tipo,
+                            Descripcion = movSPB.TicketSPB.Descripcion
+                        },
+                        TipoMovimiento = new TipoMovimiento
+                        {
+                            Id = movSPB.TipoMovimientoSPB.Id,
+                            Tipo = movSPB.TipoMovimientoSPB.Tipo,
+                            Descripcion = movSPB.TipoMovimientoSPB.Descripcion
+                        },
+                        FechaMovimiento = movSPB.FechaMovimiento,
+                        Cantidad = movSPB.Cantidad,
+                        Precio = new Moneda
+                        {
+                            IdTipo = movSPB.TipoPrecio.Id,
+                            Tipo = movSPB.TipoPrecio.Tipo,
+                            Simbolo = movSPB.TipoPrecio.Simbolo,
+                            Descripcion = movSPB.TipoPrecio.Descripcion,
+                            Cantidad = movSPB.Precio
+                        },
+                        MontoTotal = new Moneda
+                        {
+                            IdTipo = movSPB.TipoMontoTotal.Id,
+                            Tipo = movSPB.TipoMontoTotal.Tipo,
+                            Simbolo = movSPB.TipoMontoTotal.Simbolo,
+                            Descripcion = movSPB.TipoMontoTotal.Descripcion,
+                            Cantidad = movSPB.MontoTotal
+                        },
+                        Observaciones = movSPB.Observaciones,
+                        EnDb = movSPB.EnDb,
+                        PermitirDb = true
+
+                    });
+                }
+            }
+
+            //Marcar enDb true a los que estan en DB
+            foreach (Movimiento movimiento in movimientosEnDbFalse)
+            {
+                if (movimientosSPB.Any(x => x.NrMovimiento == movimiento.NroMovimiento && x.BrokerSPB.ResourceKey == movimiento.Broker.ResourceKey))
+                {
+                    movimiento.EnDb = true;
+                }
+            }
+
+            return movimientosEnDbFalse;
+        }
+
         private async Task<Ticket?> GetTicketFromDB(string ticketString, Movimiento movimiento)
         {
             try
