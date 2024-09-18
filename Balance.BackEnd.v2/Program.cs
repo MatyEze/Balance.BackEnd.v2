@@ -10,6 +10,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//CACHE
+builder.Services.AddMemoryCache();
+
 //SupabaseDB
 builder.Services.AddScoped<ISupabaseDB, SupabaseDB>();
 

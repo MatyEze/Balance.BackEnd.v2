@@ -10,7 +10,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
         Task<List<TipoMovimientoSPB>> GetTiposMovimiento();
         Task<BrokerSPB?> GetBrokerSPBByCabecera(string cabecera);
         Task<BrokerSPB?> GetBrokerSPBByResourceKey(string resourceKey);
-        Task<List<TicketSPB>> GetTicketByString(string ticketString);
+        Task<List<TicketSPB>?> GetTicketByString(string ticketString);
         /// <summary>
         /// Inserta un ticket nuevo en DB y lo devulve con la Id creada
         /// </summary>

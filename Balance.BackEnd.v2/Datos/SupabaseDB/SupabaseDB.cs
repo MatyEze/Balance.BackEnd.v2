@@ -1,5 +1,7 @@
 ﻿using Balance.BackEnd.v2.Datos.SupabaseDB.Modelos;
 using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
+using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Generic;
 
 namespace Balance.BackEnd.v2.Datos.SupabaseDB
 {
@@ -7,8 +9,9 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
     {
         private readonly Supabase.Client _client;
         private readonly ILogger<SupabaseDB> _logger;
+        private readonly IMemoryCache _memoryCache;
 
-        public SupabaseDB(IConfiguration configuration, ILogger<SupabaseDB> logger)
+        public SupabaseDB(IConfiguration configuration, ILogger<SupabaseDB> logger, IMemoryCache memoryCache)
         {
             Supabase.SupabaseOptions options = new Supabase.SupabaseOptions
             {
@@ -20,6 +23,15 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             _client = new Supabase.Client(url, key, options);
             
             _logger = logger;
+            _memoryCache = memoryCache;
+        }
+
+        private void GuardarEnCache(string key, object valor, int minutosEnCache)
+        {
+            MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(minutosEnCache));
+
+            _memoryCache.Set(key, valor, entryOptions);
         }
 
 
@@ -59,15 +71,23 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             return result.Model;
         }
 
-        public async Task<List<TicketSPB>> GetTicketByString(string ticketString)
+        public async Task<List<TicketSPB>?> GetTicketByString(string ticketString)
         {
             try
             {
-                var result = await _client.From<TicketSPB>()
-                    .Select("Id, Ticket, IdTipo, Descripcion, Tipo:IdTipo(Id, Tipo)")
-                    .Where(x => x.Ticket == ticketString).Get();
+                string cacheKey = $"key_{ticketString}";
 
-                return result.Models;
+                if (!_memoryCache.TryGetValue(cacheKey, out List<TicketSPB>? tickets))
+                {
+                    var result = await _client.From<TicketSPB>()
+                        .Select("Id, Ticket, IdTipo, Descripcion, Tipo:IdTipo(Id, Tipo)")
+                        .Where(x => x.Ticket == ticketString).Get();
+
+                    tickets = result.Models;
+                    GuardarEnCache(cacheKey, tickets, 5);
+                }
+
+                return tickets;
             }
             catch (Exception ex)
             {
