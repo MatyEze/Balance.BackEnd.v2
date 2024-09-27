@@ -75,7 +75,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
         {
             try
             {
-                string cacheKey = $"key_{ticketString}";
+                string cacheKey = $"key_GetTicketByString_{ticketString}";
 
                 if (!_memoryCache.TryGetValue(cacheKey, out List<TicketSPB>? tickets))
                 {

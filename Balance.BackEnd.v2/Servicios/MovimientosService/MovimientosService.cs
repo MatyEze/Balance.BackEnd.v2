@@ -69,8 +69,10 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
                 movimiento.Broker = new Broker { Id = brokerSPB.Id, Descripcion = brokerSPB.Descripcion, ResourceKey = brokerSPB.ResourceKey };
 
                 //movimiento.Cantidad = int.Parse(linea[6]);
-                ProcesarCantidad(movimiento, linea[6]);
+                //Fecha es requerido para poder calcular bien la cantidad, por los splits
                 ProcesarFecha(movimiento, linea[3], culture);
+
+                ProcesarCantidad(movimiento, linea[6]);
                 ProcesarPrecio(movimiento, linea[7], culture, tipoMoneda);
                 ProcesarMontoTotal(movimiento, linea[11], culture, tipoMoneda);
 

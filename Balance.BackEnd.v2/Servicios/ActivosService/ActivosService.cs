@@ -32,8 +32,15 @@ namespace Balance.BackEnd.v2.Servicios.ActivosService
 
                 if (monedaExistente == null)
                 {
-                    //monedas.Add(new Moneda() { Tipo = movimiento.MontoTotal.Tipo, Cantidad = movimiento.MontoTotal.Cantidad });
-                    monedas.Add(movimiento.MontoTotal);
+                    Moneda nuevaMoneda = new Moneda { 
+                        IdTipo = movimiento.MontoTotal.IdTipo,
+                        Tipo = movimiento.MontoTotal.Tipo,
+                        Cantidad = movimiento.MontoTotal.Cantidad,
+                        Descripcion = movimiento.MontoTotal.Descripcion,
+                        Simbolo = movimiento.MontoTotal.Simbolo
+                    };
+
+                    monedas.Add(nuevaMoneda);
                 }
                 else
                 {

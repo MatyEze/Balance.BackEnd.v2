@@ -51,6 +51,9 @@ namespace Balance.BackEnd.v2.Controllers
         {
             try
             {
+                //request.DataCompletaNueva.Movimientos[0].Broker.ResourceKey
+                //request.DataCompletaNueva.Movimientos[0].NroMovimiento
+
                 request.DataCompletaCargada.Movimientos.Concat(request.DataCompletaNueva.Movimientos);
                 Activos activosNuevos = await _activivosService.GenerarActivos(request.DataCompletaCargada.Movimientos);
                 request.DataCompletaCargada.Activos = activosNuevos;
