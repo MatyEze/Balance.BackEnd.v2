@@ -1,5 +1,6 @@
 ﻿using Balance.BackEnd.v2.Datos.SupabaseDB.Modelos;
 using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
+using System.Collections.Generic;
 
 namespace Balance.BackEnd.v2.Servicios.MovimientosService.Helpers
 {
@@ -77,6 +78,112 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService.Helpers
                 // Si los paréntesis no se encuentran en el orden correcto o están ausentes
                 return string.Empty;
             }
+        }
+
+        public static List<Movimiento> ProcesarDolarMEP(List<Movimiento> movimientos, List<TipoMovimientoSPB> tipoMovimientoSPBs)
+        {
+            List<Movimiento> retorno = movimientos;
+            TipoMovimientoSPB? comisionSPB =  tipoMovimientoSPBs
+                .Where(t => t.Tipo == "COMISION_MEP")
+                .FirstOrDefault();
+            TipoMovimientoSPB? dolarMEPSPB = tipoMovimientoSPBs
+                .Where(t => t.Tipo == "DOLAR_MEP")
+                .FirstOrDefault();
+
+            if (comisionSPB == null || dolarMEPSPB == null)
+            {
+                throw new Exception("Uno o mas de los tipos de movimientos dolar MEP no estan en DB");
+            }
+
+            List<Movimiento> movimientosDeOperacionDolarMEP = movimientos
+                .FindAll(m => m.Broker.ResourceKey == "IOL" && m.Ticket.TicketString == "AL30D")
+                .GroupBy(m => m.NroMovimiento)
+                .Where(g => g.Count() > 1) // Solo grupos con más de un elemento
+                .SelectMany(g => g) // Seleccionar todos los movimientos repetidos
+                .ToList();
+
+            int cantidadAL30D = movimientosDeOperacionDolarMEP[0].Cantidad;
+            DateTime fechaOperacionDolarMEP = movimientosDeOperacionDolarMEP[0].FechaMovimiento;
+
+            if (movimientosDeOperacionDolarMEP != null && movimientosDeOperacionDolarMEP.Count > 0)
+            {
+                Movimiento? compraAL30 = movimientos
+                    .Where(m => m.Broker.ResourceKey == "IOL" &&
+                                m.Ticket.TicketString == "AL30" &&
+                                m.Cantidad == cantidadAL30D &&
+                                m.FechaMovimiento <= fechaOperacionDolarMEP &&
+                                m.FechaMovimiento >= fechaOperacionDolarMEP.AddDays(-3))
+                    .FirstOrDefault();
+
+                if (compraAL30 != null)
+                {
+                    Movimiento? ventaDolarAL30D = movimientosDeOperacionDolarMEP
+                        .Where(m => m.MontoTotal.Tipo == "DOLAR_USD")
+                        .FirstOrDefault();
+
+                    Movimiento? comisionDolarMEP = movimientosDeOperacionDolarMEP
+                        .Where(m => m.MontoTotal.Tipo == "PESO_ARG")
+                        .FirstOrDefault();
+
+                    movimientosDeOperacionDolarMEP.Add(compraAL30);
+
+                    Movimiento mepVenta = new Movimiento
+                    {
+                        NroMovimiento = ventaDolarAL30D.NroMovimiento,
+                        Broker = ventaDolarAL30D.Broker,
+                        Ticket = new Ticket { Id = null }, //TODO. sacer el tipo de ticket dolarmep de db por parametro
+                        TipoMovimiento = new TipoMovimiento { Id = dolarMEPSPB.Id, Tipo = dolarMEPSPB.Tipo, Descripcion = dolarMEPSPB.Descripcion},
+                        FechaMovimiento = ventaDolarAL30D.FechaMovimiento,
+                        Cantidad = ventaDolarAL30D.Cantidad,
+                        Precio = ventaDolarAL30D.Precio,
+                        MontoTotal = ventaDolarAL30D.MontoTotal,
+                        Observaciones = ventaDolarAL30D.Observaciones,
+                        EnDb = ventaDolarAL30D.EnDb,
+                        PermitirDb = true
+                    };
+
+                    Movimiento mepCompra = new Movimiento
+                    {
+                        NroMovimiento = compraAL30.NroMovimiento,
+                        Broker = compraAL30.Broker,
+                        Ticket = new Ticket { Id = null }, //TODO. sacer el tipo de ticket dolarmep de db por parametro
+                        TipoMovimiento = new TipoMovimiento { Id = dolarMEPSPB.Id, Tipo = dolarMEPSPB.Tipo, Descripcion = dolarMEPSPB.Descripcion },
+                        FechaMovimiento = compraAL30.FechaMovimiento,
+                        Cantidad = compraAL30.Cantidad,
+                        Precio = compraAL30.Precio,
+                        MontoTotal = compraAL30.MontoTotal,
+                        Observaciones = compraAL30.Observaciones,
+                        EnDb = compraAL30.EnDb,
+                        PermitirDb = true
+                    };
+
+                    Movimiento mepComision = new Movimiento
+                    {
+                        NroMovimiento = comisionDolarMEP.NroMovimiento,
+                        Broker = comisionDolarMEP.Broker,
+                        Ticket = new Ticket { Id = null }, //TODO. sacer el tipo de ticket dolarmep de db por parametro
+                        TipoMovimiento = new TipoMovimiento { Id = comisionSPB.Id, Tipo = comisionSPB.Tipo, Descripcion = comisionSPB.Descripcion }, //TODO. sacar tipo movimiento de db por parametro
+                        FechaMovimiento = comisionDolarMEP.FechaMovimiento,
+                        Cantidad = comisionDolarMEP.Cantidad,
+                        Precio = comisionDolarMEP.Precio,
+                        MontoTotal = comisionDolarMEP.MontoTotal,
+                        Observaciones = comisionDolarMEP.Observaciones,
+                        EnDb = comisionDolarMEP.EnDb,
+                        PermitirDb = true
+                    };
+
+                    //SE LIMPIAN LOS MOVIMIENTOS
+                    retorno = movimientos
+                        .Where(m => !movimientosDeOperacionDolarMEP.Any(o => o.NroMovimiento == m.NroMovimiento))
+                        .ToList();
+
+                    //SE AGREGAN LOS NUEVOS MOVIMIENTOS DE OPERACION DOLAR MEP
+                    retorno.Add(mepCompra);
+                    retorno.Add(mepVenta);
+                    retorno.Add(mepComision);
+                }
+            }
+            return retorno;
         }
 
         private static string LimpiarTipoMovimiento(string tipoMovimiento)

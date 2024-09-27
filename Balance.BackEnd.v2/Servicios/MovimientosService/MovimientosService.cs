@@ -96,7 +96,7 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             //{
             //    await _supabaseDB.InsertMovimentosSPB(movimientosToUpload);
             //}
-
+            movimientos = IOLHelper.ProcesarDolarMEP(movimientos, tiposMovimientoSPB);
             return movimientos;
         }
 

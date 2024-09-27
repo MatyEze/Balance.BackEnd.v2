@@ -19,7 +19,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB.Modelos
         [Column("IdTipoMovimiento")]
         public int IdTipoMovimiento { get; set; }
         [Column("IdTicket")]
-        public int IdTicket { get; set; }
+        public int? IdTicket { get; set; }
         [Column("FechaMovimiento")]
         public DateTime FechaMovimiento { get; set; }
         [Column("IdTipoPrecio")]
