@@ -6,6 +6,7 @@ using Balance.BackEnd.v2.Servicios.ActivosService;
 using Balance.BackEnd.v2.Servicios.ActivosService.Modelos;
 using Balance.BackEnd.v2.Servicios.DataCompletaService;
 using Balance.BackEnd.v2.Servicios.DataCompletaService.Modelos;
+using Balance.BackEnd.v2.Servicios.MovimientosService;
 using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -21,14 +22,16 @@ namespace Balance.BackEnd.v2.Controllers
         private readonly IDataCompletaService _dataCompletaService;
         private readonly IMapper _mapper;
         private readonly IActivosService _activivosService;
+        private readonly IMovimientosService _movimientosService;
 
-        public BalanceController(ILogger<BalanceController> logger, ISupabaseDB supabaseDB, IDataCompletaService dataCompletaService, IMapper mapper, IActivosService activivosService)
+        public BalanceController(ILogger<BalanceController> logger, ISupabaseDB supabaseDB, IDataCompletaService dataCompletaService, IMapper mapper, IActivosService activivosService, IMovimientosService movimientosService)
         {
             _logger = logger;
             _supabaseDB = supabaseDB;
             _dataCompletaService = dataCompletaService;
             _mapper = mapper;
             _activivosService = activivosService;
+            _movimientosService = movimientosService;
         }
 
         [HttpPost]
@@ -54,7 +57,12 @@ namespace Balance.BackEnd.v2.Controllers
                 //request.DataCompletaNueva.Movimientos[0].Broker.ResourceKey
                 //request.DataCompletaNueva.Movimientos[0].NroMovimiento
 
-                request.DataCompletaCargada.Movimientos.Concat(request.DataCompletaNueva.Movimientos);
+                if (request.DataCompletaCargada == null)
+                {
+                    return Ok(request.DataCompletaNueva);
+                }
+
+                request.DataCompletaCargada.Movimientos = _movimientosService.ConcatenarMovimientos(request.DataCompletaCargada.Movimientos, request.DataCompletaNueva.Movimientos);
                 Activos activosNuevos = await _activivosService.GenerarActivos(request.DataCompletaCargada.Movimientos);
                 request.DataCompletaCargada.Activos = activosNuevos;
 

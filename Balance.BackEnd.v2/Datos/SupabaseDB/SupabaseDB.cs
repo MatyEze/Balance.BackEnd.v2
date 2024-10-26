@@ -1,4 +1,5 @@
-﻿using Balance.BackEnd.v2.Datos.SupabaseDB.Modelos;
+﻿using AutoMapper;
+using Balance.BackEnd.v2.Datos.SupabaseDB.Modelos;
 using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
@@ -10,8 +11,9 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
         private readonly Supabase.Client _client;
         private readonly ILogger<SupabaseDB> _logger;
         private readonly IMemoryCache _memoryCache;
+        private readonly IMapper _mapper;
 
-        public SupabaseDB(IConfiguration configuration, ILogger<SupabaseDB> logger, IMemoryCache memoryCache)
+        public SupabaseDB(IConfiguration configuration, ILogger<SupabaseDB> logger, IMemoryCache memoryCache, IMapper mapper)
         {
             Supabase.SupabaseOptions options = new Supabase.SupabaseOptions
             {
@@ -24,6 +26,7 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
             
             _logger = logger;
             _memoryCache = memoryCache;
+            _mapper = mapper;
         }
 
         private void GuardarEnCache(string key, object valor, int minutosEnCache)
@@ -75,6 +78,11 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
         {
             try
             {
+                if (ticketString.Equals(string.Empty))
+                {
+                    return null;
+                }
+
                 string cacheKey = $"key_GetTicketByString_{ticketString}";
 
                 if (!_memoryCache.TryGetValue(cacheKey, out List<TicketSPB>? tickets))
@@ -84,7 +92,10 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
                         .Where(x => x.Ticket == ticketString).Get();
 
                     tickets = result.Models;
-                    GuardarEnCache(cacheKey, tickets, 5);
+                    if (tickets != null && tickets.Count > 0)
+                    {
+                        GuardarEnCache(cacheKey, tickets, 5);
+                    }
                 }
 
                 return tickets;
@@ -100,8 +111,8 @@ namespace Balance.BackEnd.v2.Datos.SupabaseDB
         {
             try
             {
-                var result = await _client.From<TicketSPB>().Insert(new TicketSPB { Ticket = ticketString, IdTipo = idTipo, Descripcion = descripcion });
-                return result.Models[0];
+                var result = await _client.From<Insert_TicketSPB>().Insert(new Insert_TicketSPB { Ticket = ticketString, IdTipo = idTipo, Descripcion = descripcion });
+                return _mapper.Map<TicketSPB>(result.Models[0]);
             }
             catch (Exception ex)
             {

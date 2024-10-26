@@ -59,8 +59,13 @@ namespace Balance.BackEnd.v2.Servicios.DataCompletaService
             try
             {
                 List<Movimiento> movimientos = await _movimientosService.GetMovimientosFromDB(movimientosEnDbFalse, idUsuario);
-                Activos activos = await _activosService.GenerarActivos(movimientos);
 
+                if (movimientos.Count <= 0)
+                {
+                    return new DataCompleta { Activos = new Activos(), Movimientos = movimientos };
+                }
+
+                Activos activos = await _activosService.GenerarActivos(movimientos);
                 return new DataCompleta { Activos = activos, Movimientos = movimientos };
             }
             catch (Exception ex)

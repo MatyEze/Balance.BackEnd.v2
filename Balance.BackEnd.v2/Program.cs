@@ -1,4 +1,6 @@
 using Balance.BackEnd.v2.Datos.SupabaseDB;
+using Balance.BackEnd.v2.Datos.SupabaseDB.Mapeos;
+using Balance.BackEnd.v2.Servicios.MovimientosService.Mapeos;
 using Balance.BackEnd.v2.StartupExtension;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,7 @@ builder.Services.AddMemoryCache();
 
 //SupabaseDB
 builder.Services.AddScoped<ISupabaseDB, SupabaseDB>();
+builder.Services.AddAutoMapper(typeof(SupabaseDBProfile));
 
 //Se agregan servicios por inyeccion, estan incluidos los profiles de automaper que usa cada servicio
 ServiceExtension.AddScopesServices(builder.Services);

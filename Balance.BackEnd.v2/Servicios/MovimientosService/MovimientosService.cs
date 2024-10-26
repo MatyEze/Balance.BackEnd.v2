@@ -4,6 +4,8 @@ using Balance.BackEnd.v2.Servicios.MovimientosService.Modelos;
 using Balance.BackEnd.v2.Servicios.MovimientosService.Helpers;
 using System.Globalization;
 using AutoMapper;
+using Balance.BackEnd.v2.Servicios.AnalisisTecnicoService;
+using Balance.BackEnd.v2.Servicios.AnalisisTecnicoService.Modelos;
 
 namespace Balance.BackEnd.v2.Servicios.MovimientosService
 {
@@ -13,13 +15,15 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
         private readonly ISupabaseDB _supabaseDB;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly IAnalisisTecnicoService _analisisTecnicoService;
 
-        public MovimientosService(ILogger<MovimientosService> logger, ISupabaseDB supabaseDB, IConfiguration configuration, IMapper mapper)
+        public MovimientosService(ILogger<MovimientosService> logger, ISupabaseDB supabaseDB, IConfiguration configuration, IMapper mapper, IAnalisisTecnicoService analisisTecnicoService)
         {
             _logger = logger;
             _supabaseDB = supabaseDB;
             _configuration = configuration;
             _mapper = mapper;
+            _analisisTecnicoService = analisisTecnicoService;
         }
 
         public async Task<List<Movimiento>> ProcesarMovimientos(List<string> data, string brokerResourceKey)
@@ -220,34 +224,35 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             if (ticket != null)
             {
                 movimiento.Ticket = ticket;
+                return;
             }
 
             //TODO. Migrar analisisTecnicoService para poder descomentar esto
-            //if (_configuration.GetValue<bool>("InsertarTicketsNoIdentificados"))
-            //{
-            //    //Si no esta en DB consultamos a AnalisisTecnico
+            if (_configuration.GetValue<bool>("InsertarTicketsNoIdentificados"))
+            {
+                //Si no esta en DB consultamos a AnalisisTecnico
 
-            //    List<TipoTicketSPB> tiposTicketSPB = await _supabaseDB.GetTiposTicket();
+                List<TipoTicketSPB> tiposTicketSPB = await _supabaseDB.GetTiposTicket();
 
-            //    //Primero checkeamos si es un CEDEAR - se asume que no son Acciones no Argentinas
-            //    //TODO. Mas adelante ver como manejar acciones no Argentinas
-            //    TicketInfoo? ticketInfooCDEAR = await _analisisTecnicoService.TicketInfoCdear(ticketString);
+                //Primero checkeamos si es un CEDEAR - se asume que no son Acciones no Argentinas
+                //TODO. Mas adelante ver como manejar acciones no Argentinas
+                TicketInfoo? ticketInfooCDEAR = await _analisisTecnicoService.TicketInfoCdear(ticketString);
 
-            //    if (ticketInfooCDEAR != null)
-            //    {
-            //        TicketSPB respuesta = await _supabaseDB.InsertTicket(ticketString, tiposTicketSPB.Where(x => x.Tipo == "CEDEAR").First().Id, ticketInfooCDEAR.Descripcion);
-            //        movimiento.Ticket = new Ticket { Id = respuesta.Id, IdTipo = respuesta.IdTipo, TicketString = respuesta.Ticket, Tipo = "CEDEAR" };
-            //    }
+                if (ticketInfooCDEAR != null)
+                {
+                    TicketSPB respuesta = await _supabaseDB.InsertTicket(ticketString, tiposTicketSPB.Where(x => x.Tipo == "CEDEAR").First().Id, ticketInfooCDEAR.Descripcion);
+                    movimiento.Ticket = new Ticket { Id = respuesta.Id, IdTipo = respuesta.IdTipo, TicketString = respuesta.Ticket, Tipo = "CEDEAR" };
+                }
 
-            //    //Si no es CEDEAR se asume que es una Accion Argentina
-            //    TicketInfoo? ticketInfooAccionArg = await _analisisTecnicoService.TicketInfoAccion(ticketString);
+                //Si no es CEDEAR se asume que es una Accion Argentina
+                TicketInfoo? ticketInfooAccionArg = await _analisisTecnicoService.TicketInfoAccion(ticketString);
 
-            //    if (ticketInfooAccionArg != null)
-            //    {
-            //        TicketSPB respuesta = await _supabaseDB.InsertTicket(ticketString, tiposTicketSPB.Where(x => x.Tipo == "ACCION_ARG").First().Id, ticketInfooAccionArg.Descripcion);
-            //        movimiento.Ticket = new Ticket { Id = respuesta.Id, IdTipo = respuesta.IdTipo, TicketString = respuesta.Ticket, Tipo = "ACCION_ARG" };
-            //    }
-            //}
+                if (ticketInfooAccionArg != null && ticketInfooAccionArg.Mercado.Equals("BCBA"))
+                {
+                    TicketSPB respuesta = await _supabaseDB.InsertTicket(ticketString, tiposTicketSPB.Where(x => x.Tipo == "ACCION_ARG").First().Id, ticketInfooAccionArg.Descripcion);
+                    movimiento.Ticket = new Ticket { Id = respuesta.Id, IdTipo = respuesta.IdTipo, TicketString = respuesta.Ticket, Tipo = "ACCION_ARG" };
+                }
+            }
 
             //TODO. Identificar fondo en https://fondosonline.com
             //usando https://fondosonline.com/Operations/Funds/GetFundsProducts?sortColumn=MonthPercent&isAscending=false&PageSize=1000&searchFundName=&searchCurrency=-1&searchFocus=-1&searchStrategy=&searchHorizon=-1&searchProfile=-1&isActive=false&searchMinInvestment=
@@ -274,6 +279,7 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
                         MovimientoSPB movimientoSPB = _mapper.Map<MovimientoSPB>(movimiento);
 
                         movimientoSPB.EnDb = true;
+                        movimientoSPB.IdUsuario = idUsuario;
                         movimiento.EnDb = true;
 
                         movimientosUpload.Add(movimientoSPB);
@@ -287,6 +293,21 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             }
         }
 
+        public List<Movimiento> ConcatenarMovimientos(List<Movimiento> movimientosOld, List<Movimiento> movimientosNew)
+        {
+            foreach (Movimiento newMov in movimientosNew)
+            {
+                if (movimientosOld.Any(x => x.NroMovimiento.Equals(newMov.NroMovimiento) 
+                && x.Broker.ResourceKey.Equals(newMov.Broker.ResourceKey) 
+                && x.TipoMovimiento.Tipo.Equals(newMov.TipoMovimiento.Tipo)))
+                {
+                    continue;
+                }
+                movimientosOld.Add(newMov);
+            }
+            return movimientosOld;
+        }
+
         public async Task<List<Movimiento>> GetMovimientosFromDB(List<Movimiento> movimientosEnDbFalse, string idUsuario)
         {
             List<MovimientoSPB> movimientosSPB = await _supabaseDB.GetMovimientosSPB(idUsuario);
@@ -295,7 +316,9 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
             {
                 foreach (MovimientoSPB movSPB in movimientosSPB)
                 {
-                    if (movimientosEnDbFalse.Any(x => x.NroMovimiento == movSPB.NrMovimiento && x.Broker.ResourceKey == movSPB.BrokerSPB.ResourceKey))
+                    if (movimientosEnDbFalse.Any(x => x.NroMovimiento.Equals(movSPB.NrMovimiento)
+                    && x.Broker.ResourceKey.Equals(movSPB.BrokerSPB.ResourceKey)
+                    && x.TipoMovimiento.Tipo.Equals(movSPB.TipoMovimientoSPB.Tipo)))
                     {
                         continue;
                     }
@@ -311,11 +334,11 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
                         },
                         Ticket = new Ticket
                         {
-                            Id = movSPB.TicketSPB.Id,
-                            TicketString = movSPB.TicketSPB.Ticket,
-                            IdTipo = movSPB.TicketSPB.IdTipo,
-                            Tipo = movSPB.TicketSPB.Tipo.Tipo,
-                            Descripcion = movSPB.TicketSPB.Descripcion
+                            Id = movSPB.TicketSPB?.Id,
+                            TicketString = movSPB.TicketSPB?.Ticket,
+                            IdTipo = movSPB.TicketSPB?.IdTipo,
+                            Tipo = movSPB.TicketSPB?.Tipo.Tipo,
+                            Descripcion = movSPB.TicketSPB?.Descripcion
                         },
                         TipoMovimiento = new TipoMovimiento
                         {

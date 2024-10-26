@@ -102,6 +102,11 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService.Helpers
                 .SelectMany(g => g) // Seleccionar todos los movimientos repetidos
                 .ToList();
 
+            if (movimientosDeOperacionDolarMEP.Count <= 0)
+            {
+                return retorno;
+            }
+
             int cantidadAL30D = movimientosDeOperacionDolarMEP[0].Cantidad;
             DateTime fechaOperacionDolarMEP = movimientosDeOperacionDolarMEP[0].FechaMovimiento;
 

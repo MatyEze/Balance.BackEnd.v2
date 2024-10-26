@@ -7,6 +7,7 @@
             services.AddScopesMovimientosService();
             services.AddScopesActivosService();
             services.AddScopesDataCompletaService();
+            services.AddScopesAnalisisTecnicoService();
 
             return services;
         }

@@ -8,5 +8,6 @@ namespace Balance.BackEnd.v2.Servicios.MovimientosService
         Task<List<Movimiento>> ProcesarMovimientos(List<string> data, string brokerResourceKey);
         Task UploadMovimientos(List<Movimiento> movimientos, string idUsuario);
         Task<List<Movimiento>> GetMovimientosFromDB(List<Movimiento> movimientosEnDbFalse, string idUsuario);
+        List<Movimiento> ConcatenarMovimientos(List<Movimiento> movimientosOld, List<Movimiento> movimientosNew);
     }
 }
